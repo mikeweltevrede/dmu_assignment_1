@@ -86,3 +86,24 @@ def generate_instance(num_instances, num_items, g):
 
 
 p, K, r, w = generate_instance(num_instances=10, num_items=10, g=2)
+
+# Heuristic Algorithm
+# # Part 2
+
+# Monte Carlo Simulation
+# # Part 3
+
+# Stochastic Programming Models
+# # Part 4
+# # Part 5
+# # Part 6
+
+# Sample Average Approximation
+# # Part 7
+
+# Analysis
+# # Part 8
+
+# # Part 9
+
+# # Bonus
