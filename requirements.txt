@@ -9,3 +9,6 @@ statsmodels==0.10.1
 # For styling purposes
 autopep8==1.4.4
 pylint==2.3.1
+
+# For testing purposes
+jupyter==1.0.0
