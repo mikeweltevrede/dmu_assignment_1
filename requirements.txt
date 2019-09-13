@@ -12,3 +12,4 @@ pylint==2.3.1
 
 # For testing purposes
 jupyter==1.0.0
+
