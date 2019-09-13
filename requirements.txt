@@ -1,6 +1,11 @@
+# Python packages
 matplotlib==3.1.1
 numpy==1.17.1
 pandas==0.24.1
 scipy==1.3.1
 statistics==1.0.3.5
 statsmodels==0.10.1
+
+# For styling purposes
+autopep8==1.4.4
+pylint==2.3.1
