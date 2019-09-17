@@ -36,6 +36,9 @@ def generate_instance(num_items, g):
 
     # Generate possible item sizes.
     # # From Lab 2, we know that the `numpy.random` library is the fastest.
+    
+    # TODO: We need to check if we are indeed allowed to use another library or if we need to write
+    # it ourselves
     lam = [math.ceil(i/2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
     dh = [np.random.triangular(90+g-i, 100+g-i, 110+g-i) for i in range(num_items)]
