@@ -1,7 +1,7 @@
 """Decision Making Under Uncertainty - Assignment 1
 
 Group 2:
-Martijn Ketelaars (ANR: xxxxxx)
+Martijn Ketelaars (ANR: 120975)
 Robbie Reyerse (ANR: xxxxxx)
 Rosalien Timmerhuis (ANR: 520618)
 Mike Weltevrede (ANR: 756479)
@@ -14,8 +14,8 @@ import numpy as np
 # # Part 1
 
 
-def generate_w(num_items, g):
-    """Generate a set of `num_items` weights
+def generate_instance(num_items, g):
+    """Generate a dictionary of `num_items` possible item sizes
 
     Parameters
     ----------
@@ -26,32 +26,27 @@ def generate_w(num_items, g):
 
     Returns
     -------
-    w : list
-        List of weights
+    item_sizes : dict
+        Dictionary containing the possible item sizes
     """
 
     # Assert inputs are of correct form
     assert isinstance(num_items, int), "num_items is not an int"
     assert isinstance(g, int), "g is not an int"
 
-    items = range(num_items)
-
     # Generate possible item sizes.
     # # From Lab 2, we know that the `numpy.random` library is the fastest.
-    lam = [math.ceil(i/2) for i in items]
+    lam = [math.ceil(i/2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
-    dh = [np.random.triangular(90+g-i, 100+g-i, 110+g-i) for i in items]
+    dh = [np.random.triangular(90+g-i, 100+g-i, 110+g-i) for i in range(num_items)]
 
-    u = np.random.uniform(size=num_items)
-    pi = [0.5 + 0.05*i - 0.001 for i in items]
+    item_sizes = {"dl": dl, "dh": dh}
 
-    w = [dh[i] if u[i] < pi[i] else dl[i] for i in items]
-
-    return w
+    return item_sizes
 
 
-def generate_instance(num_instances, num_items, g):
-    """Generates instances of a Stochastic Knapsack Problem (SKP).
+def skp(num_instances, num_items, g):
+    """Generates `num_instances` instances of a Stochastic Knapsack Problem (SKP).
 
     Parameters
     ----------
@@ -65,8 +60,9 @@ def generate_instance(num_instances, num_items, g):
     Returns
     -------
     instance : tuple
-        Tuple containing the unit excess weight penalty `p`, knapsack capacity `K`,
-        revenue vector `r`, and weights `w`, respectively.
+        Tuple containing the unit excess weight penalty `p`, knapsack capacity `K`, item size
+        probability vector `pi`, revenue vector `r`, and possible item sizes `item_sizes`,
+        respectively.
     """
 
     # Assert inputs are of correct form
@@ -77,15 +73,18 @@ def generate_instance(num_instances, num_items, g):
     # Generate instance variables
     p = math.floor(60 + 0.1*g)  # Unit excess weight penalty
     K = 400 + 4*g  # Knapsack capacity
-    r = {i: 51-i for i in range(num_items)}  # Revenues
-    w = {j: generate_w(num_items, g) for j in range(num_instances)}  # Weights
 
-    instance = (p, K, r, w)
+    pi = {i: 0.5 + 0.05*i - 0.001 for i in range(num_items)} # Item size probabilities
+    r = {i: 51-i for i in range(num_items)} # Revenues
+    
+    item_sizes = {j: generate_instance(num_items, g) for j in range(num_instances)}  # dl, dh
+
+    instance = (p, K, pi, r, item_sizes)
 
     return instance
 
 
-p, K, r, w = generate_instance(num_instances=10, num_items=10, g=2)
+p, K, pi, r, item_sizes = skp(num_instances=10, num_items=10, g=2)
 
 # Heuristic Algorithm
 # # Part 2
