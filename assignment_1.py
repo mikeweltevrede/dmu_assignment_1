@@ -7,14 +7,17 @@ Rosalien Timmerhuis (ANR: 520618)
 Mike Weltevrede (ANR: 756479)
 """
 
+import random
+
 import math
 import numpy as np
+from scipy import stats
 
 # Generation of Problem Instances
 # # Part 1
 
 
-def generate_instance(num_items, g):
+def generate_instance(num_items, g, seed):
     """Generate a dictionary of `num_items` possible item sizes
 
     Parameters
@@ -36,12 +39,15 @@ def generate_instance(num_items, g):
 
     # Generate possible item sizes.
     # # From Lab 2, we know that the `numpy.random` library is the fastest.
-    
+
+    # TODO: Note about i+1 instead of i
+
     # TODO: We need to check if we are indeed allowed to use another library or if we need to write
     # it ourselves
-    lam = [math.ceil(i/2) for i in range(num_items)]
+    # np.random.seed(seed)
+    lam = [math.ceil((i+1)/2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
-    dh = [np.random.triangular(90+g-i, 100+g-i, 110+g-i) for i in range(num_items)]
+    dh = [np.random.triangular(90+g-(i+1), 100+g-(i+1), 110+g-(i+1)) for i in range(num_items)]
 
     item_sizes = {"dl": dl, "dh": dh}
 
@@ -77,23 +83,61 @@ def skp(num_instances, num_items, g):
     p = math.floor(60 + 0.1*g)  # Unit excess weight penalty
     K = 400 + 4*g  # Knapsack capacity
 
-    pi = {i: 0.5 + 0.05*i - 0.001 for i in range(num_items)} # Item size probabilities
-    r = {i: 51-i for i in range(num_items)} # Revenues
-    
-    item_sizes = {j: generate_instance(num_items, g) for j in range(num_instances)}  # dl, dh
+    pi = [0.5 + 0.05*(i+1) - 0.001 for i in range(num_items)]  # Item size probabilities
+    r = [51-(i+1) for i in range(num_items)]  # Revenues
+
+    item_sizes = {j: generate_instance(num_items, g, j) for j in range(num_instances)}  # dl, dh
 
     instance = (p, K, pi, r, item_sizes)
 
     return instance
 
 
-p, K, pi, r, item_sizes = skp(num_instances=10, num_items=10, g=2)
+num_instances = 10
+num_items = 10
+g = 2
+
+p, K, pi, r, item_sizes = skp(num_instances, num_items, g)
 
 # Heuristic Algorithm
 # # Part 2
 
+
 # Monte Carlo Simulation
 # # Part 3
+# np.random.seed(42) # TODO: remove this
+x = np.random.binomial(1, 0.5, size=num_items)  # TODO: Get these from Martijn's function
+j = 0
+
+# Slide 62 van lecture 1 -> krijg number of runs
+alpha = 0.05
+z = stats.norm.ppf(1-alpha/2)
+epsilon = 0.01
+num_runs = math.ceil((1/2)**2 * (z/epsilon)**2)
+
+num_runs = 5
+
+profits = []
+
+print(x)
+
+for run in range(num_runs):
+    u = np.random.uniform(size=num_items)
+    print(u)
+    w = [item_sizes[j]["dl"][i] if u[i] < pi[i] else item_sizes[j]["dh"][i]
+         for i in range(num_items)]
+
+    print(w)
+
+    total_weight = np.dot(x, w)
+    excess = max(total_weight-K, 0)
+
+    profit = np.dot(x, r) - excess*p
+    profits.append(profit)
+
+print(profits)
+print(np.percentile(profits, 0.025))
+print(np.percentile(profits, 0.975))
 
 # Stochastic Programming Models
 # # Part 4
@@ -109,3 +153,4 @@ p, K, pi, r, item_sizes = skp(num_instances=10, num_items=10, g=2)
 # # Part 9
 
 # # Bonus
+
