@@ -36,12 +36,16 @@ def generate_instance(num_items, g):
 
     # Generate possible item sizes.
     # # From Lab 2, we know that the `numpy.random` library is the fastest.
-    
+
     # TODO: We need to check if we are indeed allowed to use another library or if we need to write
     # it ourselves
-    lam = [math.ceil(i/2) for i in range(num_items)]
+    np.random.seed(42)
+    lam = [math.ceil((i + 1) / 2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
-    dh = [np.random.triangular(90+g-i, 100+g-i, 110+g-i) for i in range(num_items)]
+    dh = [
+        np.random.triangular(90 + g - (i + 1), 100 + g - (i + 1), 110 + g - (i + 1))
+        for i in range(num_items)
+    ]
 
     item_sizes = {"dl": dl, "dh": dh}
 
@@ -74,13 +78,17 @@ def skp(num_instances, num_items, g):
     assert isinstance(g, int), "g is not an int"
 
     # Generate instance variables
-    p = math.floor(60 + 0.1*g)  # Unit excess weight penalty
-    K = 400 + 4*g  # Knapsack capacity
+    p = math.floor(60 + 0.1 * g)  # Unit excess weight penalty
+    K = 400 + 4 * g  # Knapsack capacity
 
-    pi = {i: 0.5 + 0.05*i - 0.001 for i in range(num_items)} # Item size probabilities
-    r = {i: 51-i for i in range(num_items)} # Revenues
-    
-    item_sizes = {j: generate_instance(num_items, g) for j in range(num_instances)}  # dl, dh
+    pi = [
+        0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)
+    ]  # Item size probabilities
+    r = [51 - (i + 1) for i in range(num_items)]  # Revenues
+
+    item_sizes = {
+        j: generate_instance(num_items, g) for j in range(num_instances)
+    }  # dl, dh
 
     instance = (p, K, pi, r, item_sizes)
 
@@ -89,8 +97,39 @@ def skp(num_instances, num_items, g):
 
 p, K, pi, r, item_sizes = skp(num_instances=10, num_items=10, g=2)
 
+
 # Heuristic Algorithm
 # # Part 2
+
+
+def greedyAlgorithm(problem_instance, pi, r, item_sizes, K):
+    # Compute expectation of w_i for each item
+
+    Ew = item_sizes[problem_instance]["dl"] * (np.array(1) - pi) + item_sizes[
+        problem_instance
+    ]["dh"] * np.array(pi)
+    alpha = r / Ew
+    alpha_sorted = np.argsort(-alpha)
+    print(alpha_sorted)
+
+    x = np.zeros(10)
+    W = 0
+
+    while len(alpha_sorted) != 0:
+        consider_item = alpha_sorted[0]
+
+        if W + Ew[consider_item] <= K:
+            x[consider_item] = 1
+            W = W + Ew[consider_item]
+            # break the while loop if W > K
+
+        alpha_sorted = np.delete(alpha_sorted, 0)
+
+    return x
+
+
+tt = greedyAlgorithm(1, pi, r, item_sizes, K)
+
 
 # Monte Carlo Simulation
 # # Part 3
