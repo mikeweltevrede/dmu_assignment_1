@@ -45,9 +45,9 @@ def generate_instance(num_items, g, seed):
     # TODO: We need to check if we are indeed allowed to use another library or if we need to write
     # it ourselves
     # np.random.seed(seed)
-    lam = [math.ceil((i+1)/2) for i in range(num_items)]
+    lam = [math.ceil((i + 1)/2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
-    dh = [np.random.triangular(90+g-(i+1), 100+g-(i+1), 110+g-(i+1)) for i in range(num_items)]
+    dh = [np.random.triangular(90 + g - (i+1), 100 + g - (i+1), 110 + g - (i+1)) for i in range(num_items)]
 
     item_sizes = {"dl": dl, "dh": dh}
 
@@ -80,11 +80,11 @@ def skp(num_instances, num_items, g):
     assert isinstance(g, int), "g is not an int"
 
     # Generate instance variables
-    p = math.floor(60 + 0.1*g)  # Unit excess weight penalty
-    K = 400 + 4*g  # Knapsack capacity
+    p = math.floor(60 + 0.1 * g)  # Unit excess weight penalty
+    K = 400 + 4 * g  # Knapsack capacity
 
-    pi = [0.5 + 0.05*(i+1) - 0.001 for i in range(num_items)]  # Item size probabilities
-    r = [51-(i+1) for i in range(num_items)]  # Revenues
+    pi = [0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)]  # Item size probabilities
+    r = [51 - (i + 1) for i in range(num_items)]  # Revenues
 
     item_sizes = {j: generate_instance(num_items, g, j) for j in range(num_instances)}  # dl, dh
 
@@ -99,15 +99,45 @@ g = 2
 
 p, K, pi, r, item_sizes = skp(num_instances, num_items, g)
 
+
 # Heuristic Algorithm
 # # Part 2
+
+
+def greedyAlgorithm(problem_instance, pi, r, item_sizes, K):
+    # Compute expectation of w_i for each item
+
+    Ew = item_sizes[problem_instance]["dl"] * (np.array(1) - pi) +\
+        item_sizes[problem_instance]["dh"] * np.array(pi)
+    alpha = r / Ew
+    alpha_sorted = np.argsort(-alpha)
+
+    # TODO: x should be int
+    x = np.zeros(10)
+    W = 0
+
+    while len(alpha_sorted) != 0:
+        consider_item = alpha_sorted[0]
+
+        if W + Ew[consider_item] <= K:
+            x[consider_item] = 1
+            W = W + Ew[consider_item]
+
+        alpha_sorted = np.delete(alpha_sorted, 0)
+
+    return x
+
+# Test
+tt = greedyAlgorithm(0, pi, r, item_sizes, K)
 
 
 # Monte Carlo Simulation
 # # Part 3
 # np.random.seed(42) # TODO: remove this
-x = np.random.binomial(1, 0.5, size=num_items)  # TODO: Get these from Martijn's function
+# x = np.random.binomial(1, 0.5, size=num_items)  # TODO: Get these from Martijn's function
 j = 0
+x = greedyAlgorithm(j, pi, r, item_sizes, K)
+print("x:", x)
 
 # Slide 62 van lecture 1 -> krijg number of runs
 alpha = 0.05
@@ -115,19 +145,14 @@ z = stats.norm.ppf(1-alpha/2)
 epsilon = 0.01
 num_runs = math.ceil((1/2)**2 * (z/epsilon)**2)
 
-num_runs = 5
+# num_runs = 20
 
 profits = []
 
-print(x)
-
 for run in range(num_runs):
     u = np.random.uniform(size=num_items)
-    print(u)
     w = [item_sizes[j]["dl"][i] if u[i] < pi[i] else item_sizes[j]["dh"][i]
          for i in range(num_items)]
-
-    print(w)
 
     total_weight = np.dot(x, w)
     excess = max(total_weight-K, 0)
@@ -135,9 +160,9 @@ for run in range(num_runs):
     profit = np.dot(x, r) - excess*p
     profits.append(profit)
 
-print(profits)
-print(np.percentile(profits, 0.025))
-print(np.percentile(profits, 0.975))
+print(f"Confidence Interval: [{profits[math.ceil(0.025*num_runs)]}, {profits[math.floor(0.975*num_runs)]}]")
+
+# TODO: Confidence interval
 
 # Stochastic Programming Models
 # # Part 4
@@ -153,4 +178,3 @@ print(np.percentile(profits, 0.975))
 # # Part 9
 
 # # Bonus
-
