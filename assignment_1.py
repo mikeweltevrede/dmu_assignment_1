@@ -84,8 +84,8 @@ def skp(num_instances, num_items, g):
     p = math.floor(60 + 0.1 * g)  # Unit excess weight penalty
     K = 400 + 4 * g  # Knapsack capacity
 
-    pi = [0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)]  # Item size probabilities
-    r = [51 - (i + 1) for i in range(num_items)]  # Revenues
+    pi = np.asarray([0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)])  # Item size probabilities
+    r = np.asarray([51 - (i + 1) for i in range(num_items)])  # Revenues
 
     item_sizes = {j: generate_instance(num_items, g, j) for j in range(num_instances)}  # dl, dh
 
@@ -112,7 +112,7 @@ def greedy_algorithm(problem_instance, pi, r, item_sizes, K):
     Ew = item_sizes[problem_instance]["dl"] * (np.array(1) - pi) +\
         item_sizes[problem_instance]["dh"] * np.array(pi)
 
-    expected_revenue = Ew*r
+    expected_revenue = r
     sorted_expected_revenue = np.argsort(expected_revenue)[::-1]
 
     x = np.zeros(10, dtype=np.int16)
