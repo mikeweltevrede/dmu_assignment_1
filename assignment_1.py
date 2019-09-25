@@ -7,6 +7,7 @@ Rosalien Timmerhuis (ANR: 520618)
 Mike Weltevrede (ANR: 756479)
 """
 
+from pprint import pprint
 import random
 
 import math
@@ -44,7 +45,7 @@ def generate_instance(num_items, g, seed):
 
     # TODO: We need to check if we are indeed allowed to use another library or if we need to write
     # it ourselves
-    # np.random.seed(seed)
+    np.random.seed(seed)
     lam = [math.ceil((i + 1)/2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
     dh = [np.random.triangular(90 + g - (i+1), 100 + g - (i+1), 110 + g - (i+1))
@@ -84,7 +85,8 @@ def skp(num_instances, num_items, g):
     p = math.floor(60 + 0.1 * g)  # Unit excess weight penalty
     K = 400 + 4 * g  # Knapsack capacity
 
-    pi = np.asarray([0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)])  # Item size probabilities
+    # Item size probabilities
+    pi = np.asarray([0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)])
     r = np.asarray([51 - (i + 1) for i in range(num_items)])  # Revenues
 
     item_sizes = {j: generate_instance(num_items, g, j) for j in range(num_instances)}  # dl, dh
@@ -100,6 +102,7 @@ g = 2
 
 p, K, pi, r, item_sizes = skp(num_instances, num_items, g)
 
+pprint(item_sizes)
 
 # Heuristic Algorithm
 # # Part 2
@@ -145,32 +148,42 @@ x = greedy_algorithm(j, pi, r, item_sizes, K)
 print("x:", x)
 
 # Slide 62 van lecture 1 -> krijg number of runs
+
+
+def calculate_profits(item_sizes, x, r, pi, num_items, num_runs):
+
+    profits = []
+
+    for run in range(num_runs):
+        u = np.random.uniform(size=num_items)
+        w = [item_sizes[j]["dl"][i] if u[i] < pi[i] else item_sizes[j]["dh"][i]
+             for i in range(num_items)]
+        w = np.asarray(w)
+
+        total_weight = np.dot(x, w)
+        excess = max(total_weight-K, 0)
+
+        profit = np.dot(x, r*w) - excess*p
+        profits.append(profit)
+
+    profits = sorted(profits)
+
+    return profits
+
+
+# Test run to obtain an estimate for sigma
+profits = calculate_profits(item_sizes, x, r, pi, num_items, num_runs=1000)
+sigma = np.std(profits)
+
 alpha = 0.05
 z = stats.norm.ppf(1-alpha/2)
-epsilon = 0.01
-num_runs = math.ceil((1/4) * (z/epsilon)**2)
+epsilon = 0.01*np.mean(profits)
+n = int(np.ceil((z*sigma/epsilon)**2))
 
-# num_runs = 20
+profits = calculate_profits(item_sizes, x, r, pi, num_items, num_runs=n)
 
-profits = []
-
-for run in range(num_runs):
-    u = np.random.uniform(size=num_items)
-    w = [item_sizes[j]["dl"][i] if u[i] < pi[i] else item_sizes[j]["dh"][i]
-         for i in range(num_items)]
-    w = np.asarray(w)
-
-    total_weight = np.dot(x, w)
-    excess = max(total_weight-K, 0)
-
-    profit = np.dot(x, r*w) - excess*p
-    profits.append(profit)
-
-# TODO: Confidence interval
-profits = sorted(profits)
-print(
-    f"Confidence Interval: [{profits[math.ceil(0.025*num_runs)]}, {profits[math.floor(0.975*num_runs)]}]")
-
+half_width = z*sigma/math.sqrt(n)
+confidence_interval = (np.mean(profits) - half_width, np.mean(profits) + half_width)
 
 # Stochastic Programming Models
 # # Part 4
