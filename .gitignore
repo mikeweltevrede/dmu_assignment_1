@@ -3,4 +3,5 @@
 env/
 
 *.pdf
-*.ipynb
+*.lp
+gurobi.log
