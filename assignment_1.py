@@ -7,14 +7,18 @@ Rosalien Timmerhuis (ANR: 520618)
 Mike Weltevrede (ANR: 756479)
 """
 
+from pprint import pprint
+import random
+
 import math
 import numpy as np
+from scipy import stats
 
 # Generation of Problem Instances
 # # Part 1
 
 
-def generate_instance(num_items, g):
+def generate_instance(num_items, g, seed):
     """Generate a dictionary of `num_items` possible item sizes
 
     Parameters
@@ -37,15 +41,15 @@ def generate_instance(num_items, g):
     # Generate possible item sizes.
     # # From Lab 2, we know that the `numpy.random` library is the fastest.
 
+    # TODO: Note about i+1 instead of i
+
     # TODO: We need to check if we are indeed allowed to use another library or if we need to write
     # it ourselves
-    np.random.seed(42)
-    lam = [math.ceil((i + 1) / 2) for i in range(num_items)]
+    np.random.seed(seed)
+    lam = [math.ceil((i + 1)/2) for i in range(num_items)]
     dl = np.minimum(np.random.poisson(lam), 10)
-    dh = [
-        np.random.triangular(90 + g - (i + 1), 100 + g - (i + 1), 110 + g - (i + 1))
-        for i in range(num_items)
-    ]
+    dh = [np.random.triangular(90 + g - (i+1), 100 + g - (i+1), 110 + g - (i+1))
+          for i in range(num_items)]
 
     item_sizes = {"dl": dl, "dh": dh}
 
@@ -81,58 +85,105 @@ def skp(num_instances, num_items, g):
     p = math.floor(60 + 0.1 * g)  # Unit excess weight penalty
     K = 400 + 4 * g  # Knapsack capacity
 
-    pi = [
-        0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)
-    ]  # Item size probabilities
-    r = [51 - (i + 1) for i in range(num_items)]  # Revenues
+    # Item size probabilities
+    pi = np.asarray([0.5 + 0.05 * (i + 1) - 0.001 for i in range(num_items)])
+    r = np.asarray([51 - (i + 1) for i in range(num_items)])  # Revenues
 
-    item_sizes = {
-        j: generate_instance(num_items, g) for j in range(num_instances)
-    }  # dl, dh
+    item_sizes = {j: generate_instance(num_items, g, j) for j in range(num_instances)}  # dl, dh
 
     instance = (p, K, pi, r, item_sizes)
 
     return instance
 
 
-p, K, pi, r, item_sizes = skp(num_instances=10, num_items=10, g=2)
+num_instances = 10
+num_items = 10
+g = 2
 
+p, K, pi, r, item_sizes = skp(num_instances, num_items, g)
+
+pprint(item_sizes)
 
 # Heuristic Algorithm
 # # Part 2
 
 
-def greedyAlgorithm(problem_instance, pi, r, item_sizes, K):
+def greedy_algorithm(problem_instance, pi, r, item_sizes, K):
+    # TODO: Documentation
+
     # Compute expectation of w_i for each item
+    Ew = item_sizes[problem_instance]["dl"] * (np.array(1) - pi) +\
+        item_sizes[problem_instance]["dh"] * np.array(pi)
 
-    Ew = item_sizes[problem_instance]["dl"] * (np.array(1) - pi) + item_sizes[
-        problem_instance
-    ]["dh"] * np.array(pi)
-    alpha = r / Ew
-    alpha_sorted = np.argsort(-alpha)
-    print(alpha_sorted)
+    expected_revenue = r
+    sorted_expected_revenue = np.argsort(expected_revenue)[::-1]
 
-    x = np.zeros(10)
+    x = np.zeros(10, dtype=np.int16)
     W = 0
 
-    while len(alpha_sorted) != 0:
-        consider_item = alpha_sorted[0]
+    while len(sorted_expected_revenue) != 0:
+
+        consider_item = sorted_expected_revenue[0]
 
         if W + Ew[consider_item] <= K:
             x[consider_item] = 1
             W = W + Ew[consider_item]
-            # break the while loop if W > K
 
-        alpha_sorted = np.delete(alpha_sorted, 0)
+        sorted_expected_revenue = np.delete(sorted_expected_revenue, 0)
 
     return x
 
 
-tt = greedyAlgorithm(1, pi, r, item_sizes, K)
+# Test
+x = greedy_algorithm(0, pi, r, item_sizes, K)
 
 
 # Monte Carlo Simulation
 # # Part 3
+# TODO: put in function
+# np.random.seed(42) # TODO: remove this
+# x = np.random.binomial(1, 0.5, size=num_items)  # TODO: Get these from Martijn's function
+j = 0
+x = greedy_algorithm(j, pi, r, item_sizes, K)
+print("x:", x)
+
+# Slide 62 van lecture 1 -> krijg number of runs
+
+
+def calculate_profits(item_sizes, x, r, pi, num_items, num_runs):
+
+    profits = []
+
+    for run in range(num_runs):
+        u = np.random.uniform(size=num_items)
+        w = [item_sizes[j]["dl"][i] if u[i] < pi[i] else item_sizes[j]["dh"][i]
+             for i in range(num_items)]
+        w = np.asarray(w)
+
+        total_weight = np.dot(x, w)
+        excess = max(total_weight-K, 0)
+
+        profit = np.dot(x, r*w) - excess*p
+        profits.append(profit)
+
+    profits = sorted(profits)
+
+    return profits
+
+
+# Test run to obtain an estimate for sigma
+profits = calculate_profits(item_sizes, x, r, pi, num_items, num_runs=1000)
+sigma = np.std(profits)
+
+alpha = 0.05
+z = stats.norm.ppf(1-alpha/2)
+epsilon = 0.01*np.mean(profits)
+n = int(np.ceil((z*sigma/epsilon)**2))
+
+profits = calculate_profits(item_sizes, x, r, pi, num_items, num_runs=n)
+
+half_width = z*sigma/math.sqrt(n)
+confidence_interval = (np.mean(profits) - half_width, np.mean(profits) + half_width)
 
 # Stochastic Programming Models
 # # Part 4
