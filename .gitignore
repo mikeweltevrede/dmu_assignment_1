@@ -5,3 +5,5 @@ env/
 *.pdf
 *.lp
 *.log
+
+assignment_1.py # now used for testing and documentation
