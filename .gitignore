@@ -1,11 +1,5 @@
 .ipynb_checkpoints/
 .vscode/
 env/
+ignore/
 images/
-
-*.lp
-*.log
-*.pdf
-*.zip
-
-assignment_1.py
